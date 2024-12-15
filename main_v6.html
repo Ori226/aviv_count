@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Number Identification Practice</title>
+<style>
+  body {
+    font-family: Arial, sans-serif; 
+    background: #f0f8ff; 
+    padding: 20px;
+    text-align: center;
+  }
+  h1 {
+    margin-bottom: 1rem;
+  }
+
+  .score-error-container {
+    margin-bottom: 1rem;
+    font-size: 2rem;
+  }
+
+  .error-flower {
+    color: blue; /* Make the flower appear blue */
+  }
+
+  .top-controls {
+    margin-bottom: 1rem;
+  }
+
+  .top-controls button {
+    font-size: 1.5rem;
+    padding: 20px 30px;
+    margin: 0.5rem;
+    border-radius: 50px;
+    background: #fff;
+    border: 2px solid #ccc;
+    cursor: pointer;
+    transition: background 0.3s;
+    display: inline-block;
+  }
+
+  .top-controls button:hover {
+    background: #e0f7fa;
+  }
+
+  .choices {
+    margin-top: 2rem;
+  }
+
+  .choice-button {
+    background: #fff;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    padding: 20px 30px;
+    margin: 1rem;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: background 0.3s;
+    min-width: 100px;
+  }
+  .choice-button:hover {
+    background: #e0f7fa;
+  }
+  .correct {
+    background: #d4edda !important; 
+    border-color: #28a745 !important;
+    color: #155724;
+  }
+  .wrong {
+    background: #f8d7da !important; 
+    border-color: #dc3545 !important;
+    color: #721c24;
+  }
+
+  .controls {
+    margin-top: 2rem;
+  }
+
+  .feedback {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+  <div class="score-error-container">
+    <div id="scoreContainer" style="display:inline-block;"></div>
+    <div id="errorContainer" style="display:inline-block; margin-left:1rem;"></div>
+  </div>
+
+  <h1>Identify the Spoken Number</h1>
+  <p>Click "Play Number" to hear a number, then choose the correct answer below.</p>
+
+  <div class="top-controls">
+    <button id="playButton">Play Number</button>
+    <button id="nextButton" style="display:none;">Next Number</button>
+  </div>
+  
+  <div class="choices">
+    <button class="choice-button" id="choice1"></button>
+    <button class="choice-button" id="choice2"></button>
+    <button class="choice-button" id="choice3"></button>
+  </div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <script>
+    let correctNumber = 0;
+    let currentOptions = [];
+    let score = 0;   // Will be loaded from URL if present
+    let errors = 0;  // Will be loaded from URL if present
+    const choiceButtons = [
+      document.getElementById('choice1'),
+      document.getElementById('choice2'),
+      document.getElementById('choice3')
+    ];
+    const feedback = document.getElementById('feedback');
+    const nextButton = document.getElementById('nextButton');
+    const scoreContainer = document.getElementById('scoreContainer');
+    const errorContainer = document.getElementById('errorContainer');
+
+    // Parse score and errors from URL if present
+    function getStateFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const savedScore = parseInt(params.get('score'), 10);
+      const savedErrors = parseInt(params.get('errors'), 10);
+      return {
+        score: isNaN(savedScore) ? 0 : savedScore,
+        errors: isNaN(savedErrors) ? 0 : savedErrors
+      };
+    }
+
+    // Update the URL with the current score and errors
+    function updateURLState() {
+      const params = new URLSearchParams(window.location.search);
+      params.set('score', score);
+      params.set('errors', errors);
+      // Update the browser's URL without a page reload
+      window.history.replaceState({}, '', '?' + params.toString());
+    }
+
+    // Render the score and errors as flowers
+    function renderScoreAndErrors() {
+      scoreContainer.innerHTML = '';
+      for (let i = 0; i < score; i++) {
+        scoreContainer.innerHTML += '🏵️'; // Orange flower for correct
+      }
+
+      errorContainer.innerHTML = '';
+      for (let i = 0; i < errors; i++) {
+        errorContainer.innerHTML += '<span class="error-flower">🏵️</span>'; // Blue flower for errors
+      }
+    }
+
+    function speakText(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-US";
+      speechSynthesis.speak(utter);
+      return utter;
+    }
+
+    function speakNumber(num) {
+      speakText(num.toString());
+    }
+
+    // Reverse the digits of the number (e.g. 25 -> 52)
+    function reverseNumber(num) {
+      return parseInt(num.toString().split('').reverse().join(''), 10);
+    }
+
+    function generateNumbers() {
+      // Generate a correct number between 10 and 100
+      correctNumber = Math.floor(Math.random() * 91) + 10;
+      
+      // Always try to include the reversed number as a distractor if it's different
+      let reversed = reverseNumber(correctNumber);
+
+      let distractors = [];
+      if (reversed !== correctNumber) {
+        // Add reversed number as a distractor
+        distractors.push(reversed);
+      }
+
+      // Add another random distractor(s)
+      while(distractors.length < 2) {
+        let num = Math.floor(Math.random() * 91) + 10;
+        if(num !== correctNumber && !distractors.includes(num)) {
+          distractors.push(num);
+        }
+      }
+
+      // Combine correct answer with distractors and shuffle
+      currentOptions = [correctNumber, ...distractors].sort(() => 0.5 - Math.random());
+
+      // Assign to buttons
+      for (let i = 0; i < choiceButtons.length; i++) {
+        choiceButtons[i].textContent = currentOptions[i];
+        choiceButtons[i].classList.remove('correct', 'wrong');
+        choiceButtons[i].disabled = false;
+      }
+
+      feedback.textContent = '';
+      nextButton.style.display = 'none';
+    }
+
+    function resetButtonsAfterWrong() {
+      // After a short delay, reset the buttons so the user can try again
+      setTimeout(() => {
+        feedback.textContent = '';
+        for (let btn of choiceButtons) {
+          btn.classList.remove('wrong');
+          btn.disabled = false;
+        }
+      }, 2000);
+    }
+
+    function checkAnswer(event) {
+      const chosenNum = parseInt(event.target.textContent, 10);
+      let message = chosenNum.toString();
+      if(chosenNum === correctNumber) {
+        event.target.classList.add('correct');
+        feedback.textContent = 'Good job! That\'s correct! 😊';
+        message += ", good job! That's correct!";
+        speakText(message);
+
+        // Increase score
+        score++;
+        updateURLState();
+        renderScoreAndErrors();
+
+        // Disable all buttons after a correct answer
+        choiceButtons.forEach(btn => btn.disabled = true);
+
+        // Show next button to get a new number
+        nextButton.style.display = 'inline-block';
+      } else {
+        event.target.classList.add('wrong');
+        feedback.textContent = 'Oops, that’s not correct!';
+        message += ", oops, that’s not correct!";
+        
+        // Increase errors
+        errors++;
+        updateURLState();
+        renderScoreAndErrors();
+
+        // Disable all buttons temporarily
+        choiceButtons.forEach(btn => btn.disabled = true);
+
+        // Speak the wrong-answer message and then reset for retry
+        const utter = speakText(message);
+        utter.onend = () => {
+          resetButtonsAfterWrong();
+        };
+      }
+    }
+
+    // Event listeners
+    document.getElementById('playButton').addEventListener('click', () => {
+      speakNumber(correctNumber);
+    });
+
+    nextButton.addEventListener('click', () => {
+      generateNumbers();
+    });
+
+    choiceButtons.forEach(btn => {
+      btn.addEventListener('click', checkAnswer);
+    });
+
+    // Initialize
+    const state = getStateFromURL();
+    score = state.score;
+    errors = state.errors;
+    renderScoreAndErrors();
+    generateNumbers();
+  </script>
+</body>
+</html>
+
