@@ -20,10 +20,6 @@
     font-size: 2rem;
   }
 
-  .error-flower {
-    color: blue; /* Make the flower appear blue */
-  }
-
   .top-controls {
     margin-bottom: 1rem;
   }
@@ -73,10 +69,6 @@
     color: #721c24;
   }
 
-  .controls {
-    margin-top: 2rem;
-  }
-
   .feedback {
     margin-top: 1rem;
     font-size: 1.2rem;
@@ -87,8 +79,8 @@
 <body>
 
   <div class="score-error-container">
-    <div id="scoreContainer" style="display:inline-block;"></div>
-    <div id="errorContainer" style="display:inline-block; margin-left:1rem;"></div>
+    <span id="scoreContainer"></span>
+    <span style="margin-left:1rem;" id="errorContainer"></span>
   </div>
 
   <h1>Identify the Spoken Number</h1>
@@ -110,8 +102,8 @@
   <script>
     let correctNumber = 0;
     let currentOptions = [];
-    let score = 0;   // Will be loaded from URL if present
-    let errors = 0;  // Will be loaded from URL if present
+    let score = 0;   // Loaded from URL if present
+    let errors = 0;  // Loaded from URL if present
     const choiceButtons = [
       document.getElementById('choice1'),
       document.getElementById('choice2'),
@@ -122,7 +114,7 @@
     const scoreContainer = document.getElementById('scoreContainer');
     const errorContainer = document.getElementById('errorContainer');
 
-    // Parse score and errors from URL if present
+    // Parse score and errors from URL
     function getStateFromURL() {
       const params = new URLSearchParams(window.location.search);
       const savedScore = parseInt(params.get('score'), 10);
@@ -133,25 +125,25 @@
       };
     }
 
-    // Update the URL with the current score and errors
+    // Update the URL with current score and errors
     function updateURLState() {
       const params = new URLSearchParams(window.location.search);
       params.set('score', score);
       params.set('errors', errors);
-      // Update the browser's URL without a page reload
       window.history.replaceState({}, '', '?' + params.toString());
     }
 
-    // Render the score and errors as flowers
+    // Render the score and errors as different flowers
+    // Correct = 🏵️, Errors = 🌸
     function renderScoreAndErrors() {
       scoreContainer.innerHTML = '';
       for (let i = 0; i < score; i++) {
-        scoreContainer.innerHTML += '🏵️'; // Orange flower for correct
+        scoreContainer.innerHTML += '🏵️';
       }
 
       errorContainer.innerHTML = '';
       for (let i = 0; i < errors; i++) {
-        errorContainer.innerHTML += '<span class="error-flower">🏵️</span>'; // Blue flower for errors
+        errorContainer.innerHTML += '🌸';
       }
     }
 
@@ -166,25 +158,22 @@
       speakText(num.toString());
     }
 
-    // Reverse the digits of the number (e.g. 25 -> 52)
     function reverseNumber(num) {
       return parseInt(num.toString().split('').reverse().join(''), 10);
     }
 
     function generateNumbers() {
-      // Generate a correct number between 10 and 100
+      // Generate correct number between 10 and 100
       correctNumber = Math.floor(Math.random() * 91) + 10;
       
-      // Always try to include the reversed number as a distractor if it's different
+      // Include reversed number if it's different
       let reversed = reverseNumber(correctNumber);
-
       let distractors = [];
       if (reversed !== correctNumber) {
-        // Add reversed number as a distractor
         distractors.push(reversed);
       }
 
-      // Add another random distractor(s)
+      // Add more random distractors until we have 2
       while(distractors.length < 2) {
         let num = Math.floor(Math.random() * 91) + 10;
         if(num !== correctNumber && !distractors.includes(num)) {
@@ -192,10 +181,8 @@
         }
       }
 
-      // Combine correct answer with distractors and shuffle
       currentOptions = [correctNumber, ...distractors].sort(() => 0.5 - Math.random());
 
-      // Assign to buttons
       for (let i = 0; i < choiceButtons.length; i++) {
         choiceButtons[i].textContent = currentOptions[i];
         choiceButtons[i].classList.remove('correct', 'wrong');
@@ -207,7 +194,6 @@
     }
 
     function resetButtonsAfterWrong() {
-      // After a short delay, reset the buttons so the user can try again
       setTimeout(() => {
         feedback.textContent = '';
         for (let btn of choiceButtons) {
@@ -226,30 +212,22 @@
         message += ", good job! That's correct!";
         speakText(message);
 
-        // Increase score
         score++;
         updateURLState();
         renderScoreAndErrors();
 
-        // Disable all buttons after a correct answer
         choiceButtons.forEach(btn => btn.disabled = true);
-
-        // Show next button to get a new number
         nextButton.style.display = 'inline-block';
       } else {
         event.target.classList.add('wrong');
         feedback.textContent = 'Oops, that’s not correct!';
         message += ", oops, that’s not correct!";
-        
-        // Increase errors
+
         errors++;
         updateURLState();
         renderScoreAndErrors();
 
-        // Disable all buttons temporarily
         choiceButtons.forEach(btn => btn.disabled = true);
-
-        // Speak the wrong-answer message and then reset for retry
         const utter = speakText(message);
         utter.onend = () => {
           resetButtonsAfterWrong();
@@ -257,7 +235,6 @@
       }
     }
 
-    // Event listeners
     document.getElementById('playButton').addEventListener('click', () => {
       speakNumber(correctNumber);
     });
@@ -270,7 +247,6 @@
       btn.addEventListener('click', checkAnswer);
     });
 
-    // Initialize
     const state = getStateFromURL();
     score = state.score;
     errors = state.errors;
