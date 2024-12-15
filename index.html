@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Number Identification Practice</title>
+<style>
+  body {
+    font-family: Arial, sans-serif; 
+    background: #f0f8ff; 
+    padding: 20px;
+    text-align: center;
+  }
+  h1 {
+    margin-bottom: 1rem;
+  }
+  .choices {
+    margin-top: 2rem;
+  }
+  .choice-button {
+    background: #fff;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    padding: 10px 20px;
+    margin: 0.5rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  .choice-button:hover {
+    background: #e0f7fa;
+  }
+  .correct {
+    background: #d4edda !important; 
+    border-color: #28a745 !important;
+    color: #155724;
+  }
+  .wrong {
+    background: #f8d7da !important; 
+    border-color: #dc3545 !important;
+    color: #721c24;
+  }
+  .controls {
+    margin-top: 2rem;
+  }
+  .feedback {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  .score-container {
+    margin-bottom: 1rem;
+    font-size: 2rem;
+  }
+</style>
+</head>
+<body>
+  <div class="score-container" id="scoreContainer"></div>
+
+  <h1>Identify the Spoken Number</h1>
+  <p>Click "Play Number" to hear a number, then choose the correct answer below.</p>
+
+  <button id="playButton">Play Number</button>
+  
+  <div class="choices">
+    <button class="choice-button" id="choice1"></button>
+    <button class="choice-button" id="choice2"></button>
+    <button class="choice-button" id="choice3"></button>
+  </div>
+
+  <div class="controls">
+    <button id="nextButton" style="display:none;">Next Number</button>
+  </div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <script>
+    let correctNumber = 0;
+    let currentOptions = [];
+    let score = 0; // Will be loaded from URL if present
+    const choiceButtons = [
+      document.getElementById('choice1'),
+      document.getElementById('choice2'),
+      document.getElementById('choice3')
+    ];
+    const feedback = document.getElementById('feedback');
+    const nextButton = document.getElementById('nextButton');
+    const scoreContainer = document.getElementById('scoreContainer');
+
+    // Parse score from URL if present
+    function getScoreFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const savedScore = parseInt(params.get('score'), 10);
+      return isNaN(savedScore) ? 0 : savedScore;
+    }
+
+    // Update the URL with the current score
+    function updateURLWithScore() {
+      const params = new URLSearchParams(window.location.search);
+      params.set('score', score);
+      // Update the browser's URL without a page reload
+      window.history.replaceState({}, '', '?' + params.toString());
+    }
+
+    // Render the flowers (🏵️) according to the score
+    function renderScore() {
+      scoreContainer.innerHTML = '';
+      for (let i = 0; i < score; i++) {
+        scoreContainer.innerHTML += '🏵️';
+      }
+    }
+
+    function generateNumbers() {
+      // Generate a correct number between 10 and 100
+      correctNumber = Math.floor(Math.random() * 91) + 10;
+      
+      // Generate two other random numbers as distractors
+      let distractors = [];
+      while(distractors.length < 2) {
+        let num = Math.floor(Math.random() * 91) + 10;
+        if(num !== correctNumber && !distractors.includes(num)) {
+          distractors.push(num);
+        }
+      }
+
+      // Combine correct answer with distractors and shuffle
+      currentOptions = [correctNumber, ...distractors].sort(() => 0.5 - Math.random());
+
+      // Assign to buttons
+      for (let i = 0; i < choiceButtons.length; i++) {
+        choiceButtons[i].textContent = currentOptions[i];
+        choiceButtons[i].classList.remove('correct', 'wrong');
+        choiceButtons[i].disabled = false;
+      }
+
+      feedback.textContent = '';
+      nextButton.style.display = 'none';
+    }
+
+    function speakText(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-US";
+      speechSynthesis.speak(utter);
+      return utter;
+    }
+
+    function speakNumber(num) {
+      speakText(num.toString());
+    }
+
+    function resetButtonsAfterWrong() {
+      // After a short delay, reset the buttons so the user can try again
+      setTimeout(() => {
+        feedback.textContent = '';
+        for (let btn of choiceButtons) {
+          btn.classList.remove('wrong');
+          btn.disabled = false;
+        }
+      }, 2000);
+    }
+
+    function checkAnswer(event) {
+      const chosenNum = parseInt(event.target.textContent, 10);
+      let message = chosenNum.toString();
+      if(chosenNum === correctNumber) {
+        event.target.classList.add('correct');
+        feedback.textContent = 'Good job! That\'s correct! 😊';
+        message += ", good job! That's correct!";
+        speakText(message);
+
+        // Increase score
+        score++;
+        updateURLWithScore();
+        renderScore();
+
+        // Disable all buttons after a correct answer
+        choiceButtons.forEach(btn => btn.disabled = true);
+
+        // Show next button to get a new number
+        nextButton.style.display = 'inline-block';
+      } else {
+        event.target.classList.add('wrong');
+        feedback.textContent = 'Oops, that’s not correct!';
+        message += ", oops, that’s not correct!";
+        
+        // Disable all buttons temporarily
+        choiceButtons.forEach(btn => btn.disabled = true);
+
+        // Speak the wrong-answer message and then reset for retry
+        const utter = speakText(message);
+        utter.onend = () => {
+          resetButtonsAfterWrong();
+        };
+      }
+    }
+
+    // Event listeners
+    document.getElementById('playButton').addEventListener('click', () => {
+      speakNumber(correctNumber);
+    });
+
+    nextButton.addEventListener('click', () => {
+      generateNumbers();
+    });
+
+    choiceButtons.forEach(btn => {
+      btn.addEventListener('click', checkAnswer);
+    });
+
+    // Initialize
+    score = getScoreFromURL();
+    renderScore();
+    generateNumbers();
+  </script>
+</body>
+</html>
+
