@@ -9,7 +9,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <title>Number Identification - Focus on 2</title>
+  <title>Number Identification - Focus on 2 (5 Choices)</title>
   <style>
     body {
       font-family: Arial, sans-serif; 
@@ -123,11 +123,13 @@
     <button id="nextButton" style="display:none;">Next Number</button>
   </div>
   
+  <!-- Five choices now -->
   <div class="choices">
     <button class="choice-button" id="choice1"></button>
     <button class="choice-button" id="choice2"></button>
     <button class="choice-button" id="choice3"></button>
     <button class="choice-button" id="choice4"></button>
+    <button class="choice-button" id="choice5"></button>
   </div>
 
   <div class="feedback" id="feedback"></div>
@@ -142,7 +144,7 @@
   </div>
 
   <script>
-    // Arrays for numbers with and without 2
+    // Arrays for numbers with and without 2 (range: 10 - 99)
     const numbersWith2 = [];
     const numbersWithout2 = [];
     for (let i = 10; i <= 99; i++) {
@@ -158,18 +160,30 @@
     let score = 0;   // Loaded/stored in URL
     let errors = 0;  // Loaded/stored in URL
 
-    // Accessing the 4 choice buttons
+    // Accessing the 5 choice buttons
     const choiceButtons = [
       document.getElementById('choice1'),
       document.getElementById('choice2'),
       document.getElementById('choice3'),
-      document.getElementById('choice4')
+      document.getElementById('choice4'),
+      document.getElementById('choice5')
     ];
     const feedback = document.getElementById('feedback');
     const nextButton = document.getElementById('nextButton');
     const scoreContainer = document.getElementById('scoreContainer');
     const errorContainer = document.getElementById('errorContainer');
     const dancingFigure = document.getElementById('dancingFigure');
+
+    // teen <-> multiple-of-10 confusion pairs
+    // e.g. 14 <-> 40, 16 <-> 60, 19 <-> 90, etc.
+    const confusionMap = {
+      13: 30, 14: 40, 15: 50, 16: 60, 17: 70, 18: 80, 19: 90,
+      30: 13, 40: 14, 50: 15, 60: 16, 70: 17, 80: 18, 90: 19
+    };
+
+    function getConfusionNumber(num) {
+      return confusionMap[num] || null;
+    }
 
     // Parse score and errors from URL
     function getStateFromURL() {
@@ -214,7 +228,7 @@
       speakText(num.toString());
     }
 
-    // Reverse the digits of a number. E.g. 25 -> 52
+    // Reverse the digits (e.g., 25 -> 52)
     function reverseNumber(num) {
       return parseInt(num.toString().split('').reverse().join(''), 10);
     }
@@ -246,13 +260,25 @@
 
       // Start building our distractors
       let distractors = [];
-      // If reversed != correctNumber, add it to distractors
+
+      // (1) Add reversed distractor if different
       if (reversed !== correctNumber) {
         distractors.push(reversed);
       }
 
-      // Fill the rest of the distractors from numbersWith2 (ensuring plenty of '2')
-      while (distractors.length < 3) {
+      // (2) If the correct number is part of a "teen" confusion pair, always add it
+      const confusion = getConfusionNumber(correctNumber);
+      if (
+        confusion !== null &&
+        confusion !== correctNumber &&
+        !distractors.includes(confusion)
+      ) {
+        distractors.push(confusion);
+      }
+
+      // (3) Fill the rest from numbersWith2 (ensuring plenty of '2')
+      // until we have 4 distractors total
+      while (distractors.length < 4) {
         const candidate = numbersWith2[Math.floor(Math.random() * numbersWith2.length)];
         if (candidate !== correctNumber && !distractors.includes(candidate)) {
           distractors.push(candidate);
@@ -263,6 +289,7 @@
       currentOptions = [correctNumber, ...distractors];
       shuffle(currentOptions);
 
+      // We now have 5 total options: 1 correct + 4 distractors
       for (let i = 0; i < choiceButtons.length; i++) {
         choiceButtons[i].textContent = currentOptions[i];
         choiceButtons[i].classList.remove('correct', 'wrong');
@@ -274,7 +301,6 @@
     }
 
     function resetButtonsAfterWrong() {
-      // After a short delay, reset the buttons so the user can try again
       setTimeout(() => {
         feedback.textContent = '';
         for (let btn of choiceButtons) {
@@ -287,7 +313,7 @@
     function checkAnswer(event) {
       const chosenNum = parseInt(event.target.textContent, 10);
       let message = chosenNum.toString();
-      if(chosenNum === correctNumber) {
+      if (chosenNum === correctNumber) {
         event.target.classList.add('correct');
         feedback.textContent = 'Good job! That\'s correct! 😊';
         message += ", good job! That's correct!";
@@ -306,7 +332,6 @@
         // Show the dancing figure with a dance animation
         dancingFigure.style.display = 'inline-block';
         dancingFigure.classList.add('dance');
-
       } else {
         event.target.classList.add('wrong');
         feedback.textContent = 'Oops, that’s not correct!';
