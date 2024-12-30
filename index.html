@@ -1,80 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Number Identification Practice</title>
-<style>
-  body {
-    font-family: Arial, sans-serif; 
-    background: #f0f8ff; 
-    padding: 20px;
-    text-align: center;
-  }
-  h1 {
-    margin-bottom: 1rem;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  .score-error-container {
-    margin-bottom: 1rem;
-    font-size: 2rem;
-  }
+  <!-- No-cache meta tags -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
 
-  .top-controls {
-    margin-bottom: 1rem;
-  }
+  <title>Number Identification - Focus on 2</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif; 
+      background: #f0f8ff; 
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
 
-  .top-controls button {
-    font-size: 1.5rem;
-    padding: 20px 30px;
-    margin: 0.5rem;
-    border-radius: 50px;
-    background: #fff;
-    border: 2px solid #ccc;
-    cursor: pointer;
-    transition: background 0.3s;
-    display: inline-block;
-  }
+    .score-error-container {
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
 
-  .top-controls button:hover {
-    background: #e0f7fa;
-  }
+    .top-controls {
+      margin-bottom: 1rem;
+    }
 
-  .choices {
-    margin-top: 2rem;
-  }
+    .top-controls button {
+      font-size: 1.5rem;
+      padding: 20px 30px;
+      margin: 0.5rem;
+      border-radius: 50px;
+      background: #fff;
+      border: 2px solid #ccc;
+      cursor: pointer;
+      transition: background 0.3s;
+      display: inline-block;
+    }
 
-  .choice-button {
-    background: #fff;
-    border: 2px solid #ccc;
-    border-radius: 5px;
-    padding: 20px 30px;
-    margin: 1rem;
-    font-size: 2rem;
-    cursor: pointer;
-    transition: background 0.3s;
-    min-width: 100px;
-  }
-  .choice-button:hover {
-    background: #e0f7fa;
-  }
-  .correct {
-    background: #d4edda !important; 
-    border-color: #28a745 !important;
-    color: #155724;
-  }
-  .wrong {
-    background: #f8d7da !important; 
-    border-color: #dc3545 !important;
-    color: #721c24;
-  }
+    .top-controls button:hover {
+      background: #e0f7fa;
+    }
 
-  .feedback {
-    margin-top: 1rem;
-    font-size: 1.2rem;
-    font-weight: bold;
-  }
-</style>
+    .choices {
+      margin-top: 2rem;
+    }
+
+    .choice-button {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+      padding: 20px 30px;
+      margin: 1rem;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: background 0.3s;
+      min-width: 100px;
+    }
+    .choice-button:hover {
+      background: #e0f7fa;
+    }
+    .correct {
+      background: #d4edda !important; 
+      border-color: #28a745 !important;
+      color: #155724;
+    }
+    .wrong {
+      background: #f8d7da !important; 
+      border-color: #dc3545 !important;
+      color: #721c24;
+    }
+
+    .feedback {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    /* Container for the dancing figure */
+    .dance-container {
+      margin-top: 2rem;
+      height: 150px; /* reserve space so layout doesn't jump */
+    }
+
+    /* Hidden by default */
+    #dancingFigure {
+      display: none;
+      height: 120px;
+      user-select: none; /* prevent selection glow on mobile */
+    }
+
+    /* Dance animation */
+    .dance {
+      animation: dance 0.8s infinite alternate;
+    }
+    @keyframes dance {
+      0% {
+        transform: translateY(0);
+      }
+      100% {
+        transform: translateY(-20px);
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -83,7 +115,7 @@
     <span style="margin-left:1rem;" id="errorContainer"></span>
   </div>
 
-  <h1>Identify the Spoken Number</h1>
+  <h1>Identify the Spoken Number (Extra Practice with "2")</h1>
   <p>Click "Play Number" to hear a number, then choose the correct answer below.</p>
 
   <div class="top-controls">
@@ -95,24 +127,49 @@
     <button class="choice-button" id="choice1"></button>
     <button class="choice-button" id="choice2"></button>
     <button class="choice-button" id="choice3"></button>
+    <button class="choice-button" id="choice4"></button>
   </div>
 
   <div class="feedback" id="feedback"></div>
 
+  <!-- Dancing figure container -->
+  <div class="dance-container">
+    <img 
+      id="dancingFigure"
+      src="https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif" 
+      alt="Dancing Figure" 
+    />
+  </div>
+
   <script>
+    // Arrays for numbers with and without 2
+    const numbersWith2 = [];
+    const numbersWithout2 = [];
+    for (let i = 10; i <= 99; i++) {
+      if (i.toString().includes('2')) {
+        numbersWith2.push(i);
+      } else {
+        numbersWithout2.push(i);
+      }
+    }
+
     let correctNumber = 0;
     let currentOptions = [];
-    let score = 0;   // Loaded from URL if present
-    let errors = 0;  // Loaded from URL if present
+    let score = 0;   // Loaded/stored in URL
+    let errors = 0;  // Loaded/stored in URL
+
+    // Accessing the 4 choice buttons
     const choiceButtons = [
       document.getElementById('choice1'),
       document.getElementById('choice2'),
-      document.getElementById('choice3')
+      document.getElementById('choice3'),
+      document.getElementById('choice4')
     ];
     const feedback = document.getElementById('feedback');
     const nextButton = document.getElementById('nextButton');
     const scoreContainer = document.getElementById('scoreContainer');
     const errorContainer = document.getElementById('errorContainer');
+    const dancingFigure = document.getElementById('dancingFigure');
 
     // Parse score and errors from URL
     function getStateFromURL() {
@@ -133,8 +190,7 @@
       window.history.replaceState({}, '', '?' + params.toString());
     }
 
-    // Render the score and errors as different flowers
-    // Correct = 🏵️, Errors = 🌸
+    // Render the score (🏵️) and errors (🌸)
     function renderScoreAndErrors() {
       scoreContainer.innerHTML = '';
       for (let i = 0; i < score; i++) {
@@ -158,30 +214,54 @@
       speakText(num.toString());
     }
 
+    // Reverse the digits of a number. E.g. 25 -> 52
     function reverseNumber(num) {
       return parseInt(num.toString().split('').reverse().join(''), 10);
     }
 
+    // In-place array shuffle
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
     function generateNumbers() {
-      // Generate correct number between 10 and 100
-      correctNumber = Math.floor(Math.random() * 91) + 10;
-      
-      // Include reversed number if it's different
-      let reversed = reverseNumber(correctNumber);
+      // Hide the dancing figure (in case it was shown from a previous round)
+      dancingFigure.style.display = 'none';
+      dancingFigure.classList.remove('dance');
+
+      // 70% chance to pick a number with 2
+      const shouldPick2 = Math.random() < 0.7;
+      if (shouldPick2) {
+        correctNumber = numbersWith2[Math.floor(Math.random() * numbersWith2.length)];
+      } else {
+        correctNumber = numbersWithout2[Math.floor(Math.random() * numbersWithout2.length)];
+      }
+
+      // We'll ensure there's always a reversed version if it's different
+      const reversed = reverseNumber(correctNumber);
+
+      // Start building our distractors
       let distractors = [];
+      // If reversed != correctNumber, add it to distractors
       if (reversed !== correctNumber) {
         distractors.push(reversed);
       }
 
-      // Add more random distractors until we have 2
-      while(distractors.length < 2) {
-        let num = Math.floor(Math.random() * 91) + 10;
-        if(num !== correctNumber && !distractors.includes(num)) {
-          distractors.push(num);
+      // Fill the rest of the distractors from numbersWith2 (ensuring plenty of '2')
+      while (distractors.length < 3) {
+        const candidate = numbersWith2[Math.floor(Math.random() * numbersWith2.length)];
+        if (candidate !== correctNumber && !distractors.includes(candidate)) {
+          distractors.push(candidate);
         }
       }
 
-      currentOptions = [correctNumber, ...distractors].sort(() => 0.5 - Math.random());
+      // Combine correct answer with distractors, shuffle, and assign to buttons
+      currentOptions = [correctNumber, ...distractors];
+      shuffle(currentOptions);
 
       for (let i = 0; i < choiceButtons.length; i++) {
         choiceButtons[i].textContent = currentOptions[i];
@@ -194,6 +274,7 @@
     }
 
     function resetButtonsAfterWrong() {
+      // After a short delay, reset the buttons so the user can try again
       setTimeout(() => {
         feedback.textContent = '';
         for (let btn of choiceButtons) {
@@ -216,8 +297,16 @@
         updateURLState();
         renderScoreAndErrors();
 
+        // Disable all buttons after a correct answer
         choiceButtons.forEach(btn => btn.disabled = true);
+
+        // Show the Next button
         nextButton.style.display = 'inline-block';
+
+        // Show the dancing figure with a dance animation
+        dancingFigure.style.display = 'inline-block';
+        dancingFigure.classList.add('dance');
+
       } else {
         event.target.classList.add('wrong');
         feedback.textContent = 'Oops, that’s not correct!';
@@ -227,7 +316,10 @@
         updateURLState();
         renderScoreAndErrors();
 
+        // Disable all buttons temporarily
         choiceButtons.forEach(btn => btn.disabled = true);
+
+        // Speak the wrong-answer message, then reset for retry
         const utter = speakText(message);
         utter.onend = () => {
           resetButtonsAfterWrong();
@@ -235,18 +327,18 @@
       }
     }
 
+    // Event listeners
     document.getElementById('playButton').addEventListener('click', () => {
       speakNumber(correctNumber);
     });
-
     nextButton.addEventListener('click', () => {
       generateNumbers();
     });
-
     choiceButtons.forEach(btn => {
       btn.addEventListener('click', checkAnswer);
     });
 
+    // Initialize from URL (score & errors) and generate the first problem
     const state = getStateFromURL();
     score = state.score;
     errors = state.errors;
@@ -255,4 +347,3 @@
   </script>
 </body>
 </html>
-
